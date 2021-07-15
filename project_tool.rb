@@ -40,6 +40,12 @@ class ProjectTool
     @hovered_face_path = grep_path(ph, Sketchup::Face)
     return unless @hovered_face_path
 
+    # Prevent picking a face inside of any of the instances we are projecting.
+    unless (@hovered_face_path.to_a & @source_instances).empty?
+      @hovered_face_path = nil
+      return
+    end
+
     model.selection.add(@hovered_face_path.leaf)
   end
 
