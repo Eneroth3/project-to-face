@@ -1,5 +1,6 @@
 module Project
   def self.project(source_instances, face_path)
+    face = face_path.leaf
     face_parent = face_path.to_a[-2].definition
     projection_group = face_parent.entities.add_group # has identity transformation.
 
@@ -11,9 +12,14 @@ module Project
       )
     end
 
- 
+    # Flatten new instances to face's plane.
+    flatten_tr = transform_transformation(
+      Geom::Transformation.scaling(ORIGIN, 1, 1, 0),
+      Geom::Transformation.new(face.vertices.first.position, face.normal)
+    )
+    new_instances.each { |i| i.transform!(flatten_tr) }
+
     # Tag group
-    # Calculate flat transformations on face's plane
     # Explode
     # Reset tags?
     # Crop
@@ -21,6 +27,6 @@ module Project
 
   # "transform" the base transformation by a modifier transformation.
   def self.transform_transformation(base, modifier)
-
+    modifier*base*modifier.inverse
   end
 end
