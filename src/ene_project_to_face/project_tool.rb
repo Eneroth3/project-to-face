@@ -28,12 +28,12 @@ module Eneroth
       end
 
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
-      def onCancel(reason, view)
+      def onCancel(_reason, _view)
         reset
       end
 
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
-      def onMouseMove(flags, x, y, view)
+      def onMouseMove(_flags, x, y, view)
         ph = view.pick_helper(x, y)
         if @source_instances.empty? # TODO: or Ctrl is pressed
           hover_source(ph)
@@ -43,7 +43,7 @@ module Eneroth
       end
 
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
-      def onLButtonDown(flags, x, y, view)
+      def onLButtonDown(_flags, _x, _y, _view)
         if @source_instances.empty? # TODO: or Ctrl is pressed
           click_instance
         elsif @hovered_face_path
@@ -53,7 +53,7 @@ module Eneroth
       end
 
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
-      def resume(view)
+      def resume(_view)
         update_status_text
       end
 
@@ -81,23 +81,23 @@ module Eneroth
           end
       end
 
-      def hover_source(ph)
+      def hover_source(pick_helper)
         model = Sketchup.active_model
         model.selection.clear
 
         model.selection.add(@source_instances)
-        instance = ph.best_picked
+        instance = pick_helper.best_picked
         if instance && instance?(instance)
           model.selection.add(instance)
         end
       end
 
-      def hover_face(ph)
+      def hover_face(pick_helper)
         model = Sketchup.active_model
         model.selection.clear
         model.selection.add(@source_instances)
 
-        @hovered_face_path = grep_path(ph, Sketchup::Face)
+        @hovered_face_path = grep_path(pick_helper, Sketchup::Face)
         return unless @hovered_face_path
 
         # Prevent picking a face inside of any of the instances we are projecting.

@@ -20,7 +20,8 @@ module Eneroth
       # @param purge_layers [Boolean]
       #   make projection untagged.
       #   (requires `explode` to be true)
-      def self.project(source_instances, face_path, explode = true, crop = true, purge_faces = true, purge_layers = true)
+      def self.project(source_instances, face_path, explode = true, crop = true, purge_faces = true,
+                       purge_layers = true)
         face = face_path.leaf
         face_parent = face_path.to_a[-2].definition
         projection_group = face_parent.entities.add_group # Has identity transformation.
@@ -45,7 +46,7 @@ module Eneroth
         new_instances.each { |i| i.transform!(flatten_tr) }
 
         if explode
-          while
+          loop do
             instances = projection_group.entities.select { |e| instance?(e) }
             break if instances.empty?
 
@@ -83,7 +84,7 @@ module Eneroth
       #
       # @return [Geom::Transformation]
       def self.transform_transformation(base, modifier)
-        modifier*base*modifier.inverse
+        modifier * base * modifier.inverse
       end
 
       # TODO: Extract
