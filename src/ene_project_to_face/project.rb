@@ -23,8 +23,7 @@ module Eneroth
       def self.project(source_instances, face_path, explode = true, crop = true, purge_faces = true,
                        purge_layers = true)
         face = face_path.leaf
-        face_parent = face_path.to_a[-2].definition
-        projection_group = face_parent.entities.add_group # Has identity transformation.
+        projection_group = face.parent.entities.add_group # Has identity transformation.
 
         # Copy instances to corresponding place inside face's container.
         new_instances = source_instances.map do |source_instance|
@@ -34,7 +33,7 @@ module Eneroth
           )
         end
 
-        # Transform from face_parent space to a coordinate system where the face
+        # Transform from face's parent space to a coordinate system where the face
         # is on the X Y plane.
         uv_transformation = Geom::Transformation.new(face.vertices.first.position, face.normal)
 
