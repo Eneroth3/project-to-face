@@ -20,7 +20,6 @@ module Eneroth
       # @param purge_layers [Boolean]
       #   make projection untagged.
       #   (requires `explode` to be true)
-      # @param
       def self.project(source_instances, face_path, explode = true, crop = true, purge_faces = true, purge_layers = true)
         face = face_path.leaf
         face_parent = face_path.to_a[-2].definition
@@ -103,8 +102,8 @@ module Eneroth
 
       # Test if a point is on a face.
       #
-      # @param [Sketchup::Face]
-      # @param [Geom::Point3d]
+      # @param face [Sketchup::Face]
+      # @param point [Geom::Point3d]
       #
       # @return [Boolean]
       def self.on_face?(face, point)

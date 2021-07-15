@@ -42,34 +42,6 @@ module Eneroth
         end
       end
 
-      def hover_source(ph)
-        model = Sketchup.active_model
-        model.selection.clear
-
-        model.selection.add(@source_instances)
-        instance = ph.best_picked
-        if instance && instance?(instance)
-          model.selection.add(instance)
-        end
-      end
-
-      def hover_face(ph)
-        model = Sketchup.active_model
-        model.selection.clear
-        model.selection.add(@source_instances)
-
-        @hovered_face_path = grep_path(ph, Sketchup::Face)
-        return unless @hovered_face_path
-
-        # Prevent picking a face inside of any of the instances we are projecting.
-        unless (@hovered_face_path.to_a & @source_instances).empty?
-          @hovered_face_path = nil
-          return
-        end
-
-        model.selection.add(@hovered_face_path.leaf)
-      end
-
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
       def onLButtonDown(flags, x, y, view)
         if @source_instances.empty? # TODO: or Ctrl is pressed
@@ -78,19 +50,6 @@ module Eneroth
           click_face
         end
         update_status_text
-      end
-
-      def click_instance
-        model = Sketchup.active_model
-        @source_instances = model.selection.select { |e| instance?(e) }
-      end
-
-      def click_face
-        model = Sketchup.active_model
-        model.start_operation("Project", true)
-        Project.project(@source_instances, @hovered_face_path)
-        model.commit_operation
-        reset
       end
 
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
@@ -120,6 +79,47 @@ module Eneroth
           else
             "Select a face to project to."
           end
+      end
+
+      def hover_source(ph)
+        model = Sketchup.active_model
+        model.selection.clear
+
+        model.selection.add(@source_instances)
+        instance = ph.best_picked
+        if instance && instance?(instance)
+          model.selection.add(instance)
+        end
+      end
+
+      def hover_face(ph)
+        model = Sketchup.active_model
+        model.selection.clear
+        model.selection.add(@source_instances)
+
+        @hovered_face_path = grep_path(ph, Sketchup::Face)
+        return unless @hovered_face_path
+
+        # Prevent picking a face inside of any of the instances we are projecting.
+        unless (@hovered_face_path.to_a & @source_instances).empty?
+          @hovered_face_path = nil
+          return
+        end
+
+        model.selection.add(@hovered_face_path.leaf)
+      end
+
+      def click_instance
+        model = Sketchup.active_model
+        @source_instances = model.selection.select { |e| instance?(e) }
+      end
+
+      def click_face
+        model = Sketchup.active_model
+        model.start_operation("Project", true)
+        Project.project(@source_instances, @hovered_face_path)
+        model.commit_operation
+        reset
       end
 
       def instance?(entity)
