@@ -19,14 +19,29 @@ module Project
     )
     new_instances.each { |i| i.transform!(flatten_tr) }
 
-    # Tag group
     # Explode
-    # Reset tags?
+    # TODO: Add user option for this.
+    while
+      instances = projection_group.entities.select { |e| instance?(e) }
+      break if instances.empty?
+
+      instances.each(&:explode)
+    end
+
+    # TODO: Add user option
+    projection_group.entities.each { |e| e.layer = nil }
+
+    # Tag group
     # Crop
   end
 
   # "transform" the base transformation by a modifier transformation.
   def self.transform_transformation(base, modifier)
     modifier*base*modifier.inverse
+  end
+
+  # TODO: Extract
+  def self.instance?(entity)
+    [Sketchup::Group, Sketchup::ComponentInstance].include?(entity.class)
   end
 end
