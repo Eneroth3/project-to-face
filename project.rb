@@ -12,10 +12,14 @@ module Project
       )
     end
 
+    # Transform from face_parent space to a coordinate system where the face
+    # is on the X Y plane.
+    uv_transformation = Geom::Transformation.new(face.vertices.first.position, face.normal)
+
     # Flatten new instances to face's plane.
     flatten_tr = transform_transformation(
       Geom::Transformation.scaling(ORIGIN, 1, 1, 0),
-      Geom::Transformation.new(face.vertices.first.position, face.normal)
+      uv_transformation
     )
     new_instances.each { |i| i.transform!(flatten_tr) }
 
@@ -31,8 +35,22 @@ module Project
     # TODO: Add user option
     projection_group.entities.each { |e| e.layer = nil }
 
-    # Tag group
     # Crop
+    boundary_points = face.vertices.map(&:position)
+    # HACK: explode a temp group to merge edges.
+    temp_group = projection_group.entities.add_group
+    temp_face = temp_group.entities.add_face(boundary_points)
+    temp_face.erase!
+    temp_group.explode
+    projection_group.entities.to_a.each do |edge|
+      next unless edge.is_a?(Sketchup::Edge)
+      next if on_face?(face, midpoint(edge))
+
+      edge.erase!
+    end
+
+    # Purge faces (want a wire frame)
+    projection_group.entities.erase_entities(projection_group.entities.grep(Sketchup::Face))
   end
 
   # "transform" the base transformation by a modifier transformation.
@@ -43,5 +61,13 @@ module Project
   # TODO: Extract
   def self.instance?(entity)
     [Sketchup::Group, Sketchup::ComponentInstance].include?(entity.class)
+  end
+
+  def self.midpoint(edge)
+    Geom.linear_combination(0.5, edge.start.position, 0.5, edge.end.position)
+  end
+
+  def self.on_face?(face, point)
+    face.classify_point(point) == Sketchup::Face::PointInside
   end
 end
