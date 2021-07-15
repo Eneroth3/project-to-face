@@ -64,7 +64,10 @@ class ProjectTool
   end
 
   def click_face
+    model = Sketchup.active_model
+    model.start_operation("Project", true)
     Project.project(@source_instances, @hovered_face_path)
+    model.commit_operation
     reset
   end
 
