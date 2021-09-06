@@ -55,7 +55,7 @@ module Eneroth
           projection_group.entities.each { |e| e.layer = nil } if purge_layers
 
           if crop
-            boundary_points = face.vertices.map(&:position)
+            boundary_points = face.loops[0].vertices.map(&:position)
             # HACK: explode a temp group to merge edges.
             temp_group = projection_group.entities.add_group
             temp_face = temp_group.entities.add_face(boundary_points)
@@ -63,6 +63,7 @@ module Eneroth
             temp_group.explode
             projection_group.entities.to_a.each do |edge|
               next unless edge.is_a?(Sketchup::Edge)
+              next if edge.deleted?
               next if on_face?(face, midpoint(edge))
 
               edge.erase!
