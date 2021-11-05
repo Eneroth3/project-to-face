@@ -119,7 +119,7 @@ module Eneroth
         model.start_operation("Project", true)
         Project.project(@source_instances, @hovered_face_path)
         model.commit_operation
-        reset
+        ### reset
       end
 
       def instance?(entity)
