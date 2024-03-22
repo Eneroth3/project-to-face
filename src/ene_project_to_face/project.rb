@@ -61,13 +61,14 @@ module Eneroth
             temp_face = temp_group.entities.add_face(boundary_points)
             temp_face.erase!
             temp_group.explode
-            projection_group.entities.to_a.each do |edge|
+            to_erase = projection_group.entities.select do |edge|
               next unless edge.is_a?(Sketchup::Edge)
               next if edge.deleted?
               next if on_face?(face, midpoint(edge))
 
-              edge.erase!
+              true
             end
+            projection_group.entities.erase_entities(to_erase)
           end
 
           # Purge faces (want a wire frame)
