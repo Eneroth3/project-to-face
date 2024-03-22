@@ -68,7 +68,11 @@ module Eneroth
 
               true
             end
-            projection_group.entities.erase_entities(to_erase)
+            # HACK: Use temp group to erase edges
+            # Erasing the edges directly is unreliable as SketchUp joins
+            # together co-linear edges, sometimes later erasing the section
+            # within the crop area or missing the section outside of it.
+            projection_group.entities.add_group(to_erase).erase!
           end
 
           # Purge faces (want a wire frame)
