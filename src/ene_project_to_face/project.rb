@@ -68,7 +68,15 @@ module Eneroth
 
               true
             end
+
+            # HACK: Make temp edges to prevent collinear edges from merging when connected edges are deleted.
+            vertices = to_erase.flat_map(&:vertices).uniq
+            temp_edges = vertices.map do |vertex|
+              projection_group.entities.add_line(vertex, vertex.position.offset(face.normal))
+            end
+
             projection_group.entities.erase_entities(to_erase)
+            projection_group.entities.erase_entities(temp_edges)
           end
 
           # Purge faces (want a wire frame)
