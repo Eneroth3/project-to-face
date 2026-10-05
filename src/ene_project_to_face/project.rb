@@ -7,98 +7,76 @@ module Eneroth
       # Project groups/components onto a faces nested in a group/component.
       #
       # @param source_instances [Array<Sketchup::group, Sketchup::Component>]
-      #   Assumed to be ion the active entities.
-      # @param face_path [Sketchup::InstancePath]
-      # @param explode [Boolean]
-      #   Explode projection to geometry.
-      # @param crop [Boolean]
-      #   Remove edges outside of face's boundary.
-      #   (requires `explode` to be true)
-      # @param purge_faces [Boolean]
-      #   Remove faces, projects wire frame.
-      #   (requires `explode` to be true)
-      # @param purge_layers [Boolean]
-      #   make projection untagged.
-      #   (requires `explode` to be true)
-      def self.project(source_instances, face_path, explode = true, crop = true, purge_faces = true,
-                       purge_layers = true)
+      #   Assumed to be in the active entities.
+      def self.project(source_instances, face_path)
         face = face_path.leaf
         projection_group = face.parent.entities.add_group # Has identity transformation.
 
-        # Copy instances to corresponding place inside face's container.
-        new_instances = source_instances.map do |source_instance|
-          projection_group.entities.add_instance(
-            source_instance.definition,
-            face_path.transformation.inverse * source_instance.transformation
-          )
+        source_instances.each do |source_instance|
+          traverse_entities(source_instance.definition.entities, source_instance.transformation) do |entity, transformation|
+            next unless entity.is_a?(Sketchup::Edge)
+            copy_tr = face_path.transformation.inverse * transformation
+            points = entity.vertices.map { |v| v.position.transform(copy_tr) }
+            points.map! { |pt| pt.project_to_plane(face.plane)}
+            projection_group.entities.add_line(points)
+          end
         end
 
-        # Transform from face's parent space to a coordinate system where the face
-        # is on the X Y plane.
-        uv_transformation = Geom::Transformation.new(face.vertices.first.position, face.normal)
+        crop(projection_group, face)
+      end
 
-        # Flatten new instances to face's plane.
-        flatten_tr = transform_transformation(
-          Geom::Transformation.scaling(ORIGIN, 1, 1, 0),
-          uv_transformation
-        )
-        new_instances.each { |i| i.transform!(flatten_tr) }
-
-        if explode
-          loop do
-            instances = projection_group.entities.select { |e| instance?(e) }
-            break if instances.empty?
-
-            instances.each(&:explode)
+      # Walk recursively over entities and sub-entities.
+      #
+      # @param entities [Sketchup::Entities]
+      # @param transform [Geom::Transformation]
+      #
+      # @yield for each entity and nested entity
+      # @yieldparam entity [Sketchup::Drawingelement]
+      # @yieldparam transformation [Geom::Transformation]
+      def self.traverse_entities(entities, transformation = IDENTITY, &block)
+        entities.each do |entity|
+          if entity.respond_to?(:definition)
+            traverse_entities(
+              entity.definition.entities,
+              transformation * entity.transformation,
+              &block
+            )
           end
 
-          projection_group.entities.each { |e| e.layer = nil } if purge_layers
-
-          if crop
-            boundary_points = face.loops[0].vertices.map(&:position)
-            # HACK: explode a temp group to merge edges.
-            temp_group = projection_group.entities.add_group
-            temp_face = temp_group.entities.add_face(boundary_points)
-            temp_face.erase!
-            temp_group.explode
-            to_erase = projection_group.entities.select do |edge|
-              next unless edge.is_a?(Sketchup::Edge)
-              next if edge.deleted?
-              next if on_face?(face, midpoint(edge))
-
-              true
-            end
-
-            # HACK: Make temp edges to prevent collinear edges from merging when connected edges are deleted.
-            vertices = to_erase.flat_map(&:vertices).uniq
-            temp_edges = vertices.map do |vertex|
-              projection_group.entities.add_line(vertex, vertex.position.offset(face.normal))
-            end
-
-            projection_group.entities.erase_entities(to_erase)
-            projection_group.entities.erase_entities(temp_edges)
-          end
-
-          # Purge faces (want a wire frame)
-          if purge_faces
-            projection_group.entities.erase_entities(projection_group.entities.grep(Sketchup::Face))
-          end
+          yield entity, transformation
         end
       end
 
-      # "Transform" the base transformation by a modifier transformation.
+      # Erase every edge or part of edge within group that does not lie on face.
       #
-      # @param base [Geom::Transformation]
-      # @param modifier [Geom::Transformation]
+      # Assuming group has identity transformation.
       #
-      # @return [Geom::Transformation]
-      def self.transform_transformation(base, modifier)
-        modifier * base * modifier.inverse
-      end
+      # @param group [Sketchup::Group]
+      # @param face[ Sketchup::Face]
+      def self.crop(group, face)
+        # HACK: explode a temp group to merge edges.
+        boundary_points = face.loops[0].vertices.map(&:position)
+        temp_group = group.entities.add_group
+        temp_face = temp_group.entities.add_face(boundary_points)
+        temp_face.erase!
+        temp_group.explode
+        to_erase = group.entities.select do |edge|
+          next unless edge.is_a?(Sketchup::Edge)
+          next if edge.deleted?
+          next if on_face?(face, midpoint(edge))
 
-      # TODO: Extract
-      def self.instance?(entity)
-        [Sketchup::Group, Sketchup::ComponentInstance].include?(entity.class)
+          true
+        end
+
+        # HACK: Make temp edges from each vertex to prevent collinear edges from
+        # merging when connected edges are deleted.
+        vertices = to_erase.flat_map(&:vertices).uniq
+        temp_edges = vertices.map do |vertex|
+          group.entities.add_line(vertex, vertex.position.offset(face.normal))
+        end
+
+        group.entities.erase_entities(to_erase)
+        group.entities.erase_entities(temp_edges)
       end
 
       # Find midpoint for edge.
