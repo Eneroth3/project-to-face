@@ -22,10 +22,10 @@ module Eneroth
       File.join(PLUGIN_ROOT, "main")
     )
 
-    EXTENSION.creator     = "Eneroth"
+    EXTENSION.creator     = "Christina Eneroth"
     EXTENSION.description = "Project groups/components onto a face."
     EXTENSION.version     = "1.0.0"
-    EXTENSION.copyright   = "2021, #{EXTENSION.creator}"
+    EXTENSION.copyright   = "Copyright 2021-2026 Christina Eneroth"
     Sketchup.register_extension(EXTENSION, true)
   end
 end
