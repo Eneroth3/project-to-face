@@ -24,7 +24,7 @@ module Eneroth
 
     EXTENSION.creator     = "Christina Eneroth"
     EXTENSION.description = "Project groups/components onto a face."
-    EXTENSION.version     = "1.0.0"
+    EXTENSION.version     = "1.1.0"
     EXTENSION.copyright   = "Copyright 2021-2026 Christina Eneroth"
     Sketchup.register_extension(EXTENSION, true)
   end
